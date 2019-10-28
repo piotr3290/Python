@@ -15,14 +15,14 @@ def lcm(a, b):
 
         amount = 0
 
-        while a % numbers_p[i] == 0:
+        while not (a % numbers_p[i]):
             amount += 1
             a /= numbers_p[i]
 
         final_amount.append([numbers_p[i], amount])
         amount = 0
 
-        while b % numbers_p[i] == 0:
+        while not (b % numbers_p[i]):
             amount += 1
             b /= numbers_p[i]
 

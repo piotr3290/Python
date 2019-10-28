@@ -14,10 +14,9 @@ def sieve(n):
     result = []
 
     for i in numbers:
-        if i != 0:
+        if i:
             result.append(i)
     result.remove(1)
-
     return result
 
 

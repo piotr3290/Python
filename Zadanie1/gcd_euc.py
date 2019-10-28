@@ -1,13 +1,9 @@
 def euclid(a, b):
     if b > a:
-        temp = a
-        a = b
-        b = temp
+        a, b = b, a
 
     while b != 0:
-        temp = a % b
-        a = b
-        b = temp
+        a, b = b, a % b
 
     return a
 
