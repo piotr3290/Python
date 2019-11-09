@@ -1,6 +1,8 @@
 import random
 import math
 import sys
+import json
+import csv
 
 
 class Creature(object):
@@ -86,21 +88,54 @@ class Simulation(object):
         self.alives_amount = sheeps_amount
 
     def simulate(self):
-
+        json_data = [self.get_dict_sim(0)]
+        csv_data = [[0, self.alives_amount]]
         for i in range(self.round_numbers):
-            print("Round: ", i + 1)
+            # print("Round: ", i + 1)
             for sheep in self.sheeps:
                 sheep.move_sheep()
-                print(sheep)
+                # print(sheep)
 
             victim_i = self.wolf.move_wolf(self.sheeps)
-            print(self.wolf)
+            # print(self.wolf)
+
             if victim_i != -1:
                 self.alives_amount -= 1
-                print("Sheep ", victim_i, " has been devoured")
+
+            json_data.append(self.get_dict_sim(i + 1))
+            csv_data.append([i + 1, self.alives_amount])
+            # print("Sheep ", victim_i, " has been devoured")
 
             if self.alives_amount == 0:
                 break
+
+        self.save_to_json(json_data)
+        self.save_to_csv(csv_data)
+
+    def get_dict_sim(self, round_no):
+        sheep_pos = []
+        for sheep in self.sheeps:
+            if sheep.alive:
+                sheep_pos.append([sheep.x, sheep.y])
+            else:
+                sheep_pos.append(None)
+
+        return {
+            "round_no": round_no,
+            "wolf_pos": [self.wolf.x, self.wolf.y],
+            "sheep_pos": sheep_pos
+        }
+
+    def save_to_json(self, json_data):
+        with open('pos.json', 'w') as json_file:
+            json.dump(json_data, json_file, indent=2)
+
+    def save_to_csv(self, csv_data):
+        with open('alive.csv', 'w') as csv_file:
+            csv_writer = csv.writer(csv_file, delimiter=' ')
+            # csv_writer.writerow(['round_no', 'alives'])
+            for row in csv_data:
+                csv_writer.writerow(row)
 
 
 if __name__ == "__main__":
