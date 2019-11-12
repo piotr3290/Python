@@ -19,7 +19,6 @@ parser.add_argument('-s', '--sheep', action="store", dest='sheeps_num', help='si
 parser.add_argument('-w', '--wait', action="store_true", dest='wait', help='programme wait after every round',
                     default=False)
 parser.add_argument('-d', '--dir', action="store", dest='dir', help='directory file')
-# parser.add_argument('-h', '--help', action="store_true", dest='help', default=False)
 args = parser.parse_args()
 
 
@@ -103,14 +102,21 @@ class Simulation(object):
                  wolf_move_dist=1.0):
 
         if args.file:
-            config = configparser.ConfigParser()
-            config.read(args.file)
-            init_pos_limit = float(config['Terrain']['InitPosLimit'])
-            sheep_move_dist = float(config['Movement']['SheepMoveDist'])
-            wolf_move_dist = float(config['Movement']['WolfMoveDist'])
+            try:
+                config = configparser.ConfigParser()
+                config.read(args.file)
+                init_pos_limit = float(config['Terrain']['InitPosLimit'])
+                sheep_move_dist = float(config['Movement']['SheepMoveDist'])
+                wolf_move_dist = float(config['Movement']['WolfMoveDist'])
+            except KeyError:
+                raise ArgumentError("Wrong configure file")
 
         self.round_numbers = args.rounds_num if args.rounds_num else round_numbers
         self.sheeps_amount = args.sheeps_num if args.sheeps_num else sheeps_amount
+
+        if self.round_numbers <= 0 or self.sheeps_amount <= 0 or init_pos_limit <= 0 or sheep_move_dist <= 0 or wolf_move_dist <= 0:
+            raise ArgumentError("Argument must be positive number")
+
         self.sheeps = [Sheep(sheep_move_dist, init_pos_limit) for i in range(sheeps_amount)]
         self.wolf = Wolf(wolf_move_dist)
         self.alives_amount = sheeps_amount
@@ -174,6 +180,10 @@ class Simulation(object):
             csv_writer = csv.writer(csv_file, delimiter=';')
             for row in csv_data:
                 csv_writer.writerow(row)
+
+
+class ArgumentError(Exception):
+    pass
 
 
 if __name__ == "__main__":
