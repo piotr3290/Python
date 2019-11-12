@@ -4,18 +4,22 @@ import sys
 import json
 import csv
 import argparse
+import os
+import logging
+import configparser
 import msvcrt as m
 
 parser = argparse.ArgumentParser(
     description='Testowy opis: '
 )
 
-parser.add_argument('-c', '--config', action="store", dest='conf_file', help='choose optional configure file')
+parser.add_argument('-c', '--config', action="store", dest='file', help='choose optional configure file')
 parser.add_argument('-r', '--rounds', action="store", dest='rounds_num', help='simulation amount of rounds', type=int)
 parser.add_argument('-s', '--sheep', action="store", dest='sheeps_num', help='simulation amount of sheeps', type=int)
 parser.add_argument('-w', '--wait', action="store_true", dest='wait', help='programme wait after every round',
                     default=False)
 parser.add_argument('-d', '--dir', action="store", dest='dir', help='directory file')
+# parser.add_argument('-h', '--help', action="store_true", dest='help', default=False)
 args = parser.parse_args()
 
 
@@ -98,21 +102,18 @@ class Simulation(object):
     def __init__(self, round_numbers=50, sheeps_amount=15, init_pos_limit=10.0, sheep_move_dist=0.5,
                  wolf_move_dist=1.0):
 
-        if args.conf_file:
-            init_pos_limit, sheep_move_dist, wolf_move_dist = self.set_conf_args()
+        if args.file:
+            config = configparser.ConfigParser()
+            config.read(args.file)
+            init_pos_limit = float(config['Terrain']['InitPosLimit'])
+            sheep_move_dist = float(config['Movement']['SheepMoveDist'])
+            wolf_move_dist = float(config['Movement']['WolfMoveDist'])
 
         self.round_numbers = args.rounds_num if args.rounds_num else round_numbers
         self.sheeps_amount = args.sheeps_num if args.sheeps_num else sheeps_amount
         self.sheeps = [Sheep(sheep_move_dist, init_pos_limit) for i in range(sheeps_amount)]
         self.wolf = Wolf(wolf_move_dist)
         self.alives_amount = sheeps_amount
-
-    def set_conf_args(self):
-        with open(args.conf_file, 'r') as conf_file:
-            result = []
-            for var in conf_file.read().split():
-                result.append(int(var))
-            return result
 
     def simulate(self):
         json_data = [self.get_dict_sim(0)]
@@ -136,8 +137,8 @@ class Simulation(object):
             if self.alives_amount == 0:
                 break
             if args.wait:
-                input("Press key to continue...")
-            # m.getch()
+                input("Press key to continue")
+                # os.system("pause")
 
         self.save_to_json(json_data)
         self.save_to_csv(csv_data)
@@ -159,6 +160,7 @@ class Simulation(object):
     def save_to_json(self, json_data):
         file = 'pos.json'
         if args.dir:
+            os.makedirs(args.dir, exist_ok=True)
             file = args.dir + '/' + file
         with open(file, 'w') as json_file:
             json.dump(json_data, json_file, indent=2)
@@ -166,10 +168,10 @@ class Simulation(object):
     def save_to_csv(self, csv_data):
         file = 'alive.csv'
         if args.dir:
+            os.makedirs(args.dir, exist_ok=True)
             file = args.dir + '/' + file
         with open(file, 'w', newline='') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=';')
-            # csv_writer.writerow(['round_no', 'alives'])
             for row in csv_data:
                 csv_writer.writerow(row)
 
