@@ -3,6 +3,20 @@ import math
 import sys
 import json
 import csv
+import argparse
+import msvcrt as m
+
+parser = argparse.ArgumentParser(
+    description='Testowy opis: '
+)
+
+parser.add_argument('-c', '--config', action="store", dest='conf_file', help='choose optional configure file')
+parser.add_argument('-r', '--rounds', action="store", dest='rounds_num', help='simulation amount of rounds', type=int)
+parser.add_argument('-s', '--sheep', action="store", dest='sheeps_num', help='simulation amount of sheeps', type=int)
+parser.add_argument('-w', '--wait', action="store_true", dest='wait', help='programme wait after every round',
+                    default=False)
+parser.add_argument('-d', '--dir', action="store", dest='dir', help='directory file')
+args = parser.parse_args()
 
 
 class Creature(object):
@@ -81,11 +95,24 @@ class Sheep(Creature):
 
 class Simulation(object):
 
-    def __init__(self, init_pos_limit, round_numbers, sheeps_amount, sheep_move_dist, wolf_move_dist):
+    def __init__(self, round_numbers=50, sheeps_amount=15, init_pos_limit=10.0, sheep_move_dist=0.5,
+                 wolf_move_dist=1.0):
+
+        if args.conf_file:
+            init_pos_limit, sheep_move_dist, wolf_move_dist = self.set_conf_args()
+
+        self.round_numbers = args.rounds_num if args.rounds_num else round_numbers
+        self.sheeps_amount = args.sheeps_num if args.sheeps_num else sheeps_amount
         self.sheeps = [Sheep(sheep_move_dist, init_pos_limit) for i in range(sheeps_amount)]
         self.wolf = Wolf(wolf_move_dist)
-        self.round_numbers = round_numbers
         self.alives_amount = sheeps_amount
+
+    def set_conf_args(self):
+        with open(args.conf_file, 'r') as conf_file:
+            result = []
+            for var in conf_file.read().split():
+                result.append(int(var))
+            return result
 
     def simulate(self):
         json_data = [self.get_dict_sim(0)]
@@ -108,6 +135,9 @@ class Simulation(object):
 
             if self.alives_amount == 0:
                 break
+            if args.wait:
+                input("Press key to continue...")
+            # m.getch()
 
         self.save_to_json(json_data)
         self.save_to_csv(csv_data)
@@ -116,23 +146,29 @@ class Simulation(object):
         sheep_pos = []
         for sheep in self.sheeps:
             if sheep.alive:
-                sheep_pos.append([sheep.x, sheep.y])
+                sheep_pos.append([round(sheep.x, 3), round(sheep.y, 3)])
             else:
                 sheep_pos.append(None)
 
         return {
             "round_no": round_no,
-            "wolf_pos": [self.wolf.x, self.wolf.y],
+            "wolf_pos": [round(self.wolf.x, 3), round(self.wolf.y, 3)],
             "sheep_pos": sheep_pos
         }
 
     def save_to_json(self, json_data):
-        with open('pos.json', 'w') as json_file:
+        file = 'pos.json'
+        if args.dir:
+            file = args.dir + '/' + file
+        with open(file, 'w') as json_file:
             json.dump(json_data, json_file, indent=2)
 
     def save_to_csv(self, csv_data):
-        with open('alive.csv', 'w') as csv_file:
-            csv_writer = csv.writer(csv_file, delimiter=' ')
+        file = 'alive.csv'
+        if args.dir:
+            file = args.dir + '/' + file
+        with open(file, 'w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file, delimiter=';')
             # csv_writer.writerow(['round_no', 'alives'])
             for row in csv_data:
                 csv_writer.writerow(row)
@@ -140,8 +176,7 @@ class Simulation(object):
 
 if __name__ == "__main__":
     owieczka = Sheep(3, 100)
-
-    sim = Simulation(10, 50, 15, 0.5, 1.0)
+    sim = Simulation()
     sim.simulate()
     """for _ in range(20):
         print("x = ", owieczka.x, " y = ", owieczka.y)
