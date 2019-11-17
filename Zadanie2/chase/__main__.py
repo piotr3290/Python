@@ -3,11 +3,13 @@ import csv
 import argparse
 import os
 import configparser
+import logging
+import logging.config
 from chase.Wolf import Wolf
 from chase.Sheep import Sheep
 
 parser = argparse.ArgumentParser(
-    description='Testowy opis: '
+    description='Python zadanie 2: '
 )
 
 parser.add_argument('-c', '--config', action="store", dest='file', help='choose optional configure file')
@@ -16,7 +18,17 @@ parser.add_argument('-s', '--sheep', action="store", dest='sheeps_num', help='si
 parser.add_argument('-w', '--wait', action="store_true", dest='wait', help='programme wait after every round',
                     default=False)
 parser.add_argument('-d', '--dir', action="store", dest='dir', help='directory file')
+parser.add_argument('-l', '--log', action="store", dest='level', help='Set logs level')
 args = parser.parse_args()
+
+level = 60 if not args.level else int(args.level)
+file = "chase.log"
+if args.dir:
+    file = args.dir + '/' + file
+logging.basicConfig(level=level, filename=file, filemode='w')
+
+
+# logger = logging.getLogger(__name__)
 
 
 class Simulation(object):
@@ -57,13 +69,16 @@ class Simulation(object):
             victim_i = self.wolf.move_wolf(self.sheeps)
             # print(self.wolf)
 
+            devouring_str = ""
             if victim_i != -1:
                 self.alives_amount -= 1
+                devouring_str = " Sheep " + str(victim_i) + " has been devoured"
+                logging.info(devouring_str)
 
             json_data.append(self.get_dict_sim(i + 1))
             csv_data.append([i + 1, self.alives_amount])
-            # print("Sheep ", victim_i, " has been devoured")
 
+            self.show_sim_info(i + 1, devouring_str)
             if self.alives_amount == 0:
                 break
             if args.wait:
@@ -72,20 +87,30 @@ class Simulation(object):
 
         self.save_to_json(json_data)
         self.save_to_csv(csv_data)
+        logging.debug("Function name: simulate")
+
+    def show_sim_info(self, round_number, devouring_str):
+        print("Round:", round_number, self.wolf, " alives amount:", self.alives_amount, devouring_str)
+        logging.debug(
+            f"Function name: show_sim_info, arguments: round_number = {round_number} devouring_str = {devouring_str}")
 
     def get_dict_sim(self, round_no):
         sheep_pos = []
         for sheep in self.sheeps:
-            if sheep.alive:
-                sheep_pos.append([round(sheep.x, 3), round(sheep.y, 3)])
+            if sheep.get_alive():
+                sheep_pos.append([round(sheep.get_x(), 3), round(sheep.get_y(), 3)])
             else:
                 sheep_pos.append(None)
-
-        return {
+        result = {
             "round_no": round_no,
-            "wolf_pos": [round(self.wolf.x, 3), round(self.wolf.y, 3)],
+            "wolf_pos": [round(self.wolf.get_x(), 3), round(self.wolf.get_y(), 3)],
             "sheep_pos": sheep_pos
         }
+
+        logging.debug(
+            f"Function name: get_dict_sim, arguments: round_no = {round_no}, returns: {result}")
+
+        return result
 
     def save_to_json(self, json_data):
         file = 'pos.json'
@@ -111,7 +136,6 @@ class ArgumentError(Exception):
 
 
 if __name__ == "__main__":
-    print("hej")
     sim = Simulation()
     sim.simulate()
     """for _ in range(20):
