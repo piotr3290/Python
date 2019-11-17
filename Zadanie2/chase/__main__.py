@@ -1,13 +1,10 @@
-import random
-import math
-import sys
 import json
 import csv
 import argparse
 import os
-import logging
 import configparser
-import msvcrt as m
+from chase.Wolf import Wolf
+from chase.Sheep import Sheep
 
 parser = argparse.ArgumentParser(
     description='Testowy opis: '
@@ -20,80 +17,6 @@ parser.add_argument('-w', '--wait', action="store_true", dest='wait', help='prog
                     default=False)
 parser.add_argument('-d', '--dir', action="store", dest='dir', help='directory file')
 args = parser.parse_args()
-
-
-class Creature(object):
-    def __init__(self, x, y, move_dist):
-        self.x, self.y, self.move_dist = x, y, move_dist
-
-    def move(self, x, y):
-        self.x, self.y = x, y
-
-    def __str__(self):
-        return "x = " + str(self.x) + " y = " + str(self.y)
-
-
-class Wolf(Creature):
-    def __init__(self, wolf_move_dist):
-        super(Wolf, self).__init__(0, 0, wolf_move_dist)
-
-    def calculate_dist(self, sheep):
-        return math.sqrt((self.x - sheep.x) ** 2 + (self.y - sheep.y) ** 2)
-
-    def find_nearest_sheep(self, sheeps):
-        smallest_distance = sys.float_info.max
-        nearest_sheep = -1
-        for i in range(len(sheeps)):
-            temp_dist = self.calculate_dist(sheeps[i])
-            if sheeps[i].alive and temp_dist < smallest_distance:
-                smallest_distance = temp_dist
-                nearest_sheep = i
-        return nearest_sheep, smallest_distance
-
-    def move_wolf(self, sheeps):
-        victim_i, distance = self.find_nearest_sheep(sheeps)
-        if distance < self.move_dist:
-            sheeps[victim_i].die()
-            self.move(sheeps[victim_i].x, sheeps[victim_i].y)
-            return victim_i
-        else:
-            new_x = self.x + (sheeps[victim_i].x - self.x) * self.move_dist / distance
-            new_y = self.y + (sheeps[victim_i].y - self.y) * self.move_dist / distance
-            self.move(new_x, new_y)
-            return -1
-
-    def __str__(self):
-        return "Wolf: " + super(Wolf, self).__str__()
-
-
-class Sheep(Creature):
-    alive = True
-
-    def __init__(self, sheep_move_dist, init_pos_limit):
-        super(Sheep, self).__init__(random.uniform(-init_pos_limit, init_pos_limit),
-                                    random.uniform(-init_pos_limit, init_pos_limit),
-                                    sheep_move_dist)
-
-    def rand_direction(self):
-        switcher = {
-            1: [0, 1],  # North
-            2: [1, 0],  # East
-            3: [0, -1],  # South
-            4: [-1, 0]  # West
-        }
-        return switcher.get(random.randint(1, 4))
-
-    def move_sheep(self):
-        if self.alive:
-            direction = self.rand_direction()
-            self.move(self.x + self.move_dist * direction[0],
-                      self.y + self.move_dist * direction[1])
-
-    def die(self):
-        self.alive = False
-
-    def __str__(self):
-        return "x = " + str(self.x) + " y = " + str(self.y) + " alive = " + str(self.alive)
 
 
 class Simulation(object):
@@ -114,7 +37,8 @@ class Simulation(object):
         self.round_numbers = args.rounds_num if args.rounds_num else round_numbers
         self.sheeps_amount = args.sheeps_num if args.sheeps_num else sheeps_amount
 
-        if self.round_numbers <= 0 or self.sheeps_amount <= 0 or init_pos_limit <= 0 or sheep_move_dist <= 0 or wolf_move_dist <= 0:
+        if self.round_numbers <= 0 or self.sheeps_amount <= 0 or init_pos_limit <= 0 or sheep_move_dist <= 0 \
+                or wolf_move_dist <= 0:
             raise ArgumentError("Argument must be positive number")
 
         self.sheeps = [Sheep(sheep_move_dist, init_pos_limit) for i in range(sheeps_amount)]
@@ -187,7 +111,7 @@ class ArgumentError(Exception):
 
 
 if __name__ == "__main__":
-    owieczka = Sheep(3, 100)
+    print("hej")
     sim = Simulation()
     sim.simulate()
     """for _ in range(20):
