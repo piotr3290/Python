@@ -5,9 +5,9 @@ import logging.config
 
 
 class Sheep(Creature):
-    __alive = True
 
     def __init__(self, sheep_move_dist, init_pos_limit):
+        self.__alive = True
         super(Sheep, self).__init__(random.uniform(-init_pos_limit, init_pos_limit),
                                     random.uniform(-init_pos_limit, init_pos_limit),
                                     sheep_move_dist)
@@ -28,10 +28,11 @@ class Sheep(Creature):
             direction = self.rand_direction()
             new_x = self._x + self._move_dist * direction[0]
             new_y = self._y + self._move_dist * direction[1]
-            self.move(new_x, new_y)
             logging.info(
                 f"Sheep moves from: {self._x, self._y} to: {new_x, new_y}")
-        logging.debug(f"Function name: move_sheep")
+
+            self.move(new_x, new_y)
+            logging.debug(f"Function name: move_sheep")
 
     def die(self):
         self.__alive = False
