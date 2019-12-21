@@ -2,7 +2,7 @@ import random
 
 from PyQt5.QtCore import Qt, QPoint, QRect
 from PyQt5.QtGui import QPalette, QColor, QPainter, QPen, QBrush, QImage
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QMainWindow
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QMainWindow, QColorDialog, QFileDialog
 from chase.Simulation import Simulation
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QLabel
@@ -41,17 +41,18 @@ class Poletko(QWidget):
         super(Poletko, self).__init__(parent)
         self.logic = logic
         self.setAutoFillBackground(True)
+        """palette = QPalette()
         oImage = QImage("background.jpg")
-        palette = QPalette()
         palette.setBrush(QPalette.Window, QBrush(oImage))
-        self.setPalette(palette)
-        """palette = self.palette()
-        palette.setColor(self.backgroundRole(), QColor(72, 143, 60))
         self.setPalette(palette)"""
+
         self.init_pos_limit = init_pos_limit
         self.scale = 200 / init_pos_limit
         self.points = []
         self.wolf = QPoint(10, 10)
+        self.sheepsColour = Qt.red
+        self.wolfColour = Qt.blue
+        self.backgroundColour = Qt.green
         self.setGeometry(QRect(0, 300, 600, 600))
         self.simulation = Simulation(sheeps_amount=0, init_pos_limit=init_pos_limit)
         self.show()
@@ -68,21 +69,28 @@ class Poletko(QWidget):
             self.update()
 
     def paintEvent(self, e):
+        """palette = self.palette()
+        palette.setColor(self.backgroundRole(), self.backgroundColour)
+        self.setPalette(palette)"""
+        palette = QPalette()
+        oImage = QImage("background.jpg")
+        palette.setBrush(QPalette.Window, QBrush(oImage))
+        self.setPalette(palette)
         qp = QPainter()
         qp.begin(self)
         self.draw_points(qp)
         qp.end()
 
     def draw_points(self, qp):
-        qp.setBrush(Qt.red)
-        qp.setPen(Qt.red)
+        qp.setBrush(self.sheepsColour)
+        qp.setPen(self.sheepsColour)
         for sheep in self.simulation.get_sheeps():
             if sheep.get_alive():
-                qp.drawEllipse(sheep.get_x() * self.scale + 300, sheep.get_y() * self.scale + 300, 7, 7)
-        qp.setBrush(Qt.blue)
-        qp.setPen(Qt.blue)
+                qp.drawEllipse(sheep.get_x() * self.scale + 300, sheep.get_y() * self.scale + 300, 12, 12)
+        qp.setBrush(self.wolfColour)
+        qp.setPen(self.wolfColour)
         qp.drawEllipse(self.simulation.get_wolf().get_x() * self.scale + 300,
-                       self.simulation.get_wolf().get_y() * self.scale + 300, 7, 7)
+                       self.simulation.get_wolf().get_y() * self.scale + 300, 12, 12)
 
     def simulate_round(self):
         if not len(self.simulation.get_sheeps()):
@@ -99,6 +107,32 @@ class Poletko(QWidget):
         self.simulation = Simulation(sheeps_amount=0, init_pos_limit=self.init_pos_limit)
         self.update()
 
+    def setSheepsColour(self):
+        self.sheepsColour = QColorDialog.getColor()
+        self.update()
+
+    def setWolfColour(self):
+        self.wolfColour = QColorDialog.getColor()
+        self.update()
+
+    def setBackgroundColour(self):
+        self.backgroundColour = QColorDialog.getColor()
+        self.update()
+
+    def save_file_json(self):
+        file_name = QFileDialog.getSaveFileName(self, 'Save File', '.', "JSON (*.json)")
+        print(file_name)
+        if file_name[0] != '':
+            self.simulation.save_to_json(file_name[0])
+
+    def open_file_json(self):
+        file_name = QFileDialog.getOpenFileName(self, 'Open File', '.', "JSON (*.json)")
+
+        if file_name[0] != '':
+            self.reset_sim()
+            self.simulation.read_from_json(file_name[0])
+            self.update()
+
 
 class InfoWindow(QtWidgets.QMainWindow):
     def __init__(self, text, parent=None):
@@ -113,10 +147,8 @@ class InfoWindow(QtWidgets.QMainWindow):
         self.push_button_ok.setGeometry(QtCore.QRect(60, 60, 40, 30))
         self.push_button_ok.setObjectName("ok_button")
         self.push_button_ok.setText("OK")
-        self.push_button_ok.clicked.connect(lambda: self.close_window())
+        self.push_button_ok.clicked.connect(lambda: self.close())
 
-    def close_window(self):
-        self.close()
 
 if __name__ == "__main__":
     app = QApplication([])

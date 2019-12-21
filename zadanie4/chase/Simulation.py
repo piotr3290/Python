@@ -38,8 +38,8 @@ class Simulation(object):
         self.__no_round = 0
 
     def simulate(self):
-        """self.json_data = [self.get_dict_sim(0)]
-        self.csv_data = [[0, self.__alives_amount]]"""
+        #  self.json_data = [self.get_dict_sim(0)]
+        """self.csv_data = [[0, self.__alives_amount]]"""
         # for i in range(self.__round_numbers):
 
         for sheep in self.__sheeps:
@@ -55,8 +55,8 @@ class Simulation(object):
             # logging.info(devouring_str)
         self.__no_round += 1
 
-        """self.json_data.append(self.get_dict_sim(self.__no_round + 1))
-        self.csv_data.append([self.__no_round + 1, self.__alives_amount])
+        # self.json_data.append(self.get_dict_sim(self.__no_round + 1))
+        """self.csv_data.append([self.__no_round + 1, self.__alives_amount])
 
         self.show_sim_info(self.__no_round + 1, devouring_str)
         if not self.__alives_amount:
@@ -66,37 +66,35 @@ class Simulation(object):
         self.save_to_json(self.json_data)
         self.save_to_csv(self.csv_data)
         logging.debug("Function name: simulate")"""
+        # self.save_to_json(self.json_data)
 
     def show_sim_info(self, round_number, devouring_str):
         print("Round:", round_number, self.__wolf, " alives amount:", self.__alives_amount, devouring_str)
         logging.debug(
             f"Function name: show_sim_info, arguments: round_number = {round_number} devouring_str = {devouring_str}")
 
-    def get_dict_sim(self, round_no):
+    def get_dict_sim(self):
         sheep_pos = []
         for sheep in self.__sheeps:
-            if sheep.get_alive():
-                sheep_pos.append([round(sheep.get_x(), 3), round(sheep.get_y(), 3)])
-            else:
-                sheep_pos.append(None)
-        result = {
-            "round_no": round_no,
-            "wolf_pos": [round(self.__wolf.get_x(), 3), round(self.__wolf.get_y(), 3)],
-            "sheep_pos": sheep_pos
-        }
+            sheep_pos.append({"x": sheep.get_x(), "y": sheep.get_y(), "alive": sheep.get_alive()})
 
-        logging.debug(
-            f"Function name: get_dict_sim, arguments: round_no = {round_no}, returns: {result}")
+        result = {
+            "wolf": {"x": self.__wolf.get_x(), "y": self.__wolf.get_y()},
+            "sheeps": sheep_pos
+        }
 
         return result
 
-    def save_to_json(self, json_data):
-        file = 'pos.json'
-        if self.__args.dir:
-            os.makedirs(self.__args.dir, exist_ok=True)
-            file = self.__args.dir + '/' + file
+    def save_to_json(self, file):
         with open(file, 'w') as json_file:
-            json.dump(json_data, json_file, indent=2)
+            json.dump(self.get_dict_sim(), json_file, indent=2)
+
+    def read_from_json(self, file):
+
+        with open(file, 'r') as json_file:
+            data = json.load(json_file)
+            self.set_sheeps(data["sheeps"])
+            self.set_wolf(data["wolf"])
 
     def save_to_csv(self, csv_data):
         file = 'alive.csv'
@@ -123,6 +121,16 @@ class Simulation(object):
 
     def get_alive_amount(self):
         return self.__alives_amount
+
+    def set_sheeps(self, sheeps_data):
+        for sheep_data in sheeps_data:
+            sheep = Sheep(self.__sheep_move_dist, sheep_data["x"], sheep_data["y"])
+            if not sheep_data["alive"]:
+                sheep.die()
+            self.__sheeps.append(sheep)
+
+    def set_wolf(self, wolf_data):
+        self.__wolf.move(wolf_data['x'], wolf_data["y"])
 
 
 class ArgumentError(Exception):

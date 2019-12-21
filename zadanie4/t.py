@@ -8,7 +8,8 @@
 
 from PyQt5.QtCore import Qt, QPoint, QRect
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLabel, QColorDialog, QFileDialog
+from PyQt5.QtGui import QPalette, QColor, QPainter, QPen, QBrush, QImage
 
 from MainWindow import Poletko
 
@@ -25,6 +26,22 @@ class Ui_MainWindow(object):
     def reset_simulation(self):
         self.pol.reset_sim()
         self.update_label()
+
+    def changeSheepsColour(self):
+        self.pol.setSheepsColour()
+
+    def changeWolfColour(self):
+        self.pol.setWolfColour()
+
+    def changeMeadowColour(self):
+        self.pol.setBackgroundColour()
+
+    def save_to_json_file(self):
+        self.pol.save_file_json()
+
+    def read_from_json_file(self):
+        self.pol.open_file_json()
+
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -63,12 +80,15 @@ class Ui_MainWindow(object):
 
         self.action_open = QtWidgets.QAction(MainWindow)
         self.action_open.setObjectName("action_open")
+        self.action_open.triggered.connect(lambda: self.read_from_json_file())
 
         self.action_save = QtWidgets.QAction(MainWindow)
         self.action_save.setObjectName("action_save")
+        self.action_save.triggered.connect(lambda: self.save_to_json_file())
 
         self.action_quit = QtWidgets.QAction(MainWindow)
         self.action_quit.setObjectName("action_quit")
+        self.action_quit.triggered.connect(lambda: MainWindow.close())
 
         self.menu_file.addAction(self.action_open)
         self.menu_file.addAction(self.action_save)
@@ -82,12 +102,15 @@ class Ui_MainWindow(object):
 
         self.action_sheeps = QtWidgets.QAction(MainWindow)
         self.action_sheeps.setObjectName("action_sheeps")
+        self.action_sheeps.triggered.connect(lambda: self.changeSheepsColour())
 
         self.action_wolf = QtWidgets.QAction(MainWindow)
         self.action_wolf.setObjectName("action_wolf")
+        self.action_wolf.triggered.connect(lambda: self.changeWolfColour())
 
         self.action_meadow = QtWidgets.QAction(MainWindow)
         self.action_meadow.setObjectName("action_meadow")
+        self.action_meadow.triggered.connect(lambda: self.changeMeadowColour())
 
         self.menu_colour.addAction(self.action_sheeps)
         self.menu_colour.addAction(self.action_wolf)
