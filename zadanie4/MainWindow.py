@@ -47,9 +47,9 @@ class Poletko(QWidget):
         self.setPalette(palette)"""
 
         self.init_pos_limit = init_pos_limit
-        self.scale = 200 / init_pos_limit
+        self.zoom = 1
+        self.scale = (300 * (2 / 3) * self.zoom / init_pos_limit)
         self.points = []
-        self.wolf = QPoint(10, 10)
         self.sheepsColour = Qt.red
         self.wolfColour = Qt.blue
         self.backgroundColour = Qt.green
@@ -58,8 +58,8 @@ class Poletko(QWidget):
         self.show()
 
     def mouseReleaseEvent(self, e):
-        if (abs(e.pos().x() - 600 / 2) <= (2 * 300 / 3)) & \
-                (abs(e.pos().y() - 600 / 2) <= (2 * 300 / 3)):
+        if (abs(e.pos().x() - 600 / 2) <= (2 * 300 / 3) * self.zoom) & \
+                (abs(e.pos().y() - 600 / 2) <= (2 * 300 / 3) * self.zoom):
             if e.button() == Qt.LeftButton:
                 self.simulation.add_sheep((e.pos().x() - 300) / self.scale, (e.pos().y() - 300) / self.scale)
                 self.logic.update_label()
@@ -86,11 +86,14 @@ class Poletko(QWidget):
         qp.setPen(self.sheepsColour)
         for sheep in self.simulation.get_sheeps():
             if sheep.get_alive():
-                qp.drawEllipse(sheep.get_x() * self.scale + 300, sheep.get_y() * self.scale + 300, 12, 12)
+                qp.drawEllipse(sheep.get_x() * self.scale + 300, sheep.get_y() * self.scale + 300, 12 * self.zoom,
+                               12 * self.zoom)
         qp.setBrush(self.wolfColour)
         qp.setPen(self.wolfColour)
+        print("X: ", self.simulation.get_wolf().get_x() * self.scale + 300)
+        print("Y: ", self.simulation.get_wolf().get_y() * self.scale + 300)
         qp.drawEllipse(self.simulation.get_wolf().get_x() * self.scale + 300,
-                       self.simulation.get_wolf().get_y() * self.scale + 300, 12, 12)
+                       self.simulation.get_wolf().get_y() * self.scale + 300, 12 * self.zoom, 12 * self.zoom)
 
     def simulate_round(self):
         if not len(self.simulation.get_sheeps()):
@@ -132,6 +135,17 @@ class Poletko(QWidget):
             self.reset_sim()
             self.simulation.read_from_json(file_name[0])
             self.update()
+
+    def standardization(self, x, new_min, new_max, old_min, old_max):
+        return (x - old_min) / (old_max - old_min) * (new_max - new_min) + new_min
+
+    def set_zoom(self, zoom):
+        if zoom > 50:
+            self.zoom = self.standardization(zoom, 1, 5, 50, 99)
+        elif zoom < 50:
+            self.zoom = self.standardization(zoom, 0.2, 1, 0, 50)
+        self.scale = (300 * (2 / 3) * self.zoom / self.init_pos_limit)
+        self.update()
 
 
 class InfoWindow(QtWidgets.QMainWindow):

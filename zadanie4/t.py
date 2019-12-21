@@ -8,7 +8,7 @@
 
 from PyQt5.QtCore import Qt, QPoint, QRect
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QLabel, QColorDialog, QFileDialog
+from PyQt5.QtWidgets import QLabel, QColorDialog, QFileDialog, QSlider
 from PyQt5.QtGui import QPalette, QColor, QPainter, QPen, QBrush, QImage
 
 from MainWindow import Poletko
@@ -42,6 +42,10 @@ class Ui_MainWindow(object):
     def read_from_json_file(self):
         self.pol.open_file_json()
 
+    def zooming(self):
+        # print(self.zoom_slider.value())
+        self.pol.set_zoom(self.zoom_slider.value())
+
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -65,8 +69,18 @@ class Ui_MainWindow(object):
         self.push_button_reset.clicked.connect(lambda: self.reset_simulation())
 
         self.label_alive_amount = QLabel(self.central_widget)
-        self.label_alive_amount.setGeometry(QtCore.QRect(300, 10, 93, 40))
+        self.label_alive_amount.setGeometry(QtCore.QRect(270, 10, 93, 40))
         self.label_alive_amount.setObjectName("alive_label")
+
+        self.zoom_slider = QSlider(self.central_widget)
+        self.zoom_slider.setOrientation(Qt.Horizontal)
+        self.zoom_slider.setGeometry(QtCore.QRect(385, 10, 130, 40))
+        self.zoom_slider.setFocusPolicy(Qt.StrongFocus)
+        self.zoom_slider.setTickPosition(QSlider.TicksBothSides)
+        self.zoom_slider.setTickInterval(10)
+        self.zoom_slider.setSingleStep(1)
+        self.zoom_slider.setValue(50)
+        self.zoom_slider.valueChanged.connect(lambda: self.zooming())
 
         MainWindow.setCentralWidget(self.central_widget)
 
