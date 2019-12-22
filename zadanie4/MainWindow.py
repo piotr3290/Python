@@ -1,171 +1,198 @@
-import random
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import Qt, QEventLoop, QTimer
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QLabel, QSlider, QActionGroup, QAction
 
-from PyQt5.QtCore import Qt, QPoint, QRect
-from PyQt5.QtGui import QPalette, QColor, QPainter, QPen, QBrush, QImage
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QMainWindow, QColorDialog, QFileDialog
-from chase.Simulation import Simulation
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QLabel
+from SimulationVisualization import VisualizationWidget
 
 
-class MainWindow(QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
+
     def __init__(self):
-        super().__init__()
-        self.resize(600, 900)
-
-        self.centralwidget = QWidget(self)
-        self.centralwidget.setObjectName("centralwidget")
-
-        self.verticalLayoutWidget = QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QRect(-1, -1, 801, 551))
-        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
-
-        self.verticalLayout = QVBoxLayout(self.verticalLayoutWidget)
-        self.verticalLayout.setObjectName("verticalLayout")
-
-        self.button_1 = QPushButton(self.verticalLayoutWidget)
-        self.button_1.setObjectName("guzior")
-        self.verticalLayout.addWidget(self.button_1)
-
-        self.poletko = Poletko(self.verticalLayoutWidget)
-        self.poletko.initUI(10)
-        self.verticalLayout.addWidget(self.poletko)
-
-        """self.layout.addWidget(QPushButton("Step"))
-        self.layout.addWidget(Poletko(10))"""
+        super(MainWindow, self).__init__()
+        self.setupUi()
+        self.loop_flag = False
+        self.tick_time = 500
         self.show()
 
+    def setupUi(self):
+        self.setObjectName("MainWindow")
+        self.setFixedSize(600, 650)
+        self.setWindowIcon(QIcon("icon.ico"))
 
-class Poletko(QWidget):
-    def __init__(self, parent, logic, init_pos_limit):
-        super(Poletko, self).__init__(parent)
-        self.logic = logic
-        self.setAutoFillBackground(True)
-        """palette = QPalette()
-        oImage = QImage("background.jpg")
-        palette.setBrush(QPalette.Window, QBrush(oImage))
-        self.setPalette(palette)"""
+        self.central_widget = QtWidgets.QWidget(self)
+        self.central_widget.setObjectName("centralwidget")
 
-        self.init_pos_limit = init_pos_limit
-        self.zoom = 1
-        self.scale = (300 * (2 / 3) * self.zoom / init_pos_limit)
-        self.points = []
-        self.sheepsColour = Qt.red
-        self.wolfColour = Qt.blue
-        self.backgroundColour = Qt.green
-        self.setGeometry(QRect(0, 300, 600, 600))
-        self.simulation = Simulation(sheeps_amount=0, init_pos_limit=init_pos_limit)
-        self.show()
+        self.pol = VisualizationWidget(self.central_widget, self, 10)
+        self.pol.setGeometry(QtCore.QRect(0, 50, 600, 600))
+        self.pol.setObjectName("poletunio")
 
-    def mouseReleaseEvent(self, e):
-        if (abs(e.pos().x() - 600 / 2) <= (2 * 300 / 3) * self.zoom) & \
-                (abs(e.pos().y() - 600 / 2) <= (2 * 300 / 3) * self.zoom):
-            if e.button() == Qt.LeftButton:
-                self.simulation.add_sheep((e.pos().x() - 300) / self.scale, (e.pos().y() - 300) / self.scale)
-                self.logic.update_label()
+        self.push_button_step = QtWidgets.QPushButton(self.central_widget)
+        self.push_button_step.setGeometry(QtCore.QRect(5, 5, 80, 40))
+        self.push_button_step.setObjectName("step")
+        self.push_button_step.clicked.connect(lambda: self.simulate_step())
 
-            elif e.button() == Qt.RightButton:
-                self.simulation.set_wolf_position((e.pos().x() - 300) / self.scale, (e.pos().y() - 300) / self.scale)
-            self.update()
+        self.push_button_reset = QtWidgets.QPushButton(self.central_widget)
+        self.push_button_reset.setGeometry(QtCore.QRect(90, 5, 80, 40))
+        self.push_button_reset.setObjectName("reset")
+        self.push_button_reset.clicked.connect(lambda: self.reset_simulation())
 
-    def paintEvent(self, e):
-        """palette = self.palette()
-        palette.setColor(self.backgroundRole(), self.backgroundColour)
-        self.setPalette(palette)"""
-        palette = QPalette()
-        oImage = QImage("background.jpg")
-        palette.setBrush(QPalette.Window, QBrush(oImage))
-        self.setPalette(palette)
-        qp = QPainter()
-        qp.begin(self)
-        self.draw_points(qp)
-        qp.end()
+        self.push_button_start = QtWidgets.QPushButton(self.central_widget)
+        self.push_button_start.setGeometry(QtCore.QRect(175, 5, 80, 40))
+        self.push_button_start.setObjectName("start")
+        self.push_button_start.clicked.connect(lambda: self.start_loop())
 
-    def draw_points(self, qp):
-        qp.setBrush(self.sheepsColour)
-        qp.setPen(self.sheepsColour)
-        for sheep in self.simulation.get_sheeps():
-            if sheep.get_alive():
-                qp.drawEllipse(sheep.get_x() * self.scale + 300, sheep.get_y() * self.scale + 300, 12 * self.zoom,
-                               12 * self.zoom)
-        qp.setBrush(self.wolfColour)
-        qp.setPen(self.wolfColour)
-        print("X: ", self.simulation.get_wolf().get_x() * self.scale + 300)
-        print("Y: ", self.simulation.get_wolf().get_y() * self.scale + 300)
-        qp.drawEllipse(self.simulation.get_wolf().get_x() * self.scale + 300,
-                       self.simulation.get_wolf().get_y() * self.scale + 300, 12 * self.zoom, 12 * self.zoom)
+        self.label_alive_amount = QLabel(self.central_widget)
+        self.label_alive_amount.setGeometry(QtCore.QRect(290, 5, 100, 40))
+        self.label_alive_amount.setObjectName("alive_label")
 
-    def simulate_round(self):
-        if not len(self.simulation.get_sheeps()):
-            info_window = InfoWindow("There is no sheep!", self)
-            info_window.show()
+        self.zoom_slider = QSlider(self.central_widget)
+        self.zoom_slider.setOrientation(Qt.Horizontal)
+        self.zoom_slider.setGeometry(QtCore.QRect(410, 5, 180, 40))
+        self.zoom_slider.setFocusPolicy(Qt.StrongFocus)
+        self.zoom_slider.setTickPosition(QSlider.TicksBothSides)
+        self.zoom_slider.setTickInterval(10)
+        self.zoom_slider.setSingleStep(1)
+        self.zoom_slider.setValue(50)
+        self.zoom_slider.valueChanged.connect(lambda: self.zooming())
+
+        self.setCentralWidget(self.central_widget)
+
+        self.menubar = QtWidgets.QMenuBar(self)
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 600, 30))
+        self.menubar.setObjectName("menubar")
+
+        self.menu_file = QtWidgets.QMenu(self.menubar)
+        self.menu_file.setObjectName("menu_file")
+        self.setMenuBar(self.menubar)
+
+        self.action_open = QtWidgets.QAction(self)
+        self.action_open.setObjectName("action_open")
+        self.action_open.triggered.connect(lambda: self.read_from_json_file())
+
+        self.action_save = QtWidgets.QAction(self)
+        self.action_save.setObjectName("action_save")
+        self.action_save.triggered.connect(lambda: self.save_to_json_file())
+
+        self.action_quit = QtWidgets.QAction(self)
+        self.action_quit.setObjectName("action_quit")
+        self.action_quit.triggered.connect(lambda: self.close())
+
+        self.menu_file.addAction(self.action_open)
+        self.menu_file.addAction(self.action_save)
+        self.menu_file.addSeparator()
+        self.menu_file.addAction(self.action_quit)
+
+        self.menu_settings = QtWidgets.QMenu(self.menubar)
+        self.menu_settings.setObjectName("menu_settings")
+
+        self.menu_colour = QtWidgets.QMenu(self.menu_settings)
+        self.menu_colour.setObjectName("menu_color")
+
+        self.menu_time = QtWidgets.QMenu(self.menu_settings)
+        self.menu_time.setObjectName("menu_time")
+        self.group = QActionGroup(self.menu_time)
+        time_values = ["0.5", "1.0", "1.5", "2.0"]
+        for time_val in time_values:
+            action = QAction(time_val, self.menu_time, checkable=True, checked=time_val == time_values[0])
+            self.menu_time.addAction(action)
+            self.group.addAction(action)
+        self.group.setExclusive(True)
+        self.group.triggered.connect(self.change_time)
+
+        self.action_sheeps = QtWidgets.QAction(self)
+        self.action_sheeps.setObjectName("action_sheeps")
+        self.action_sheeps.triggered.connect(lambda: self.change_sheeps_colour())
+
+        self.action_wolf = QtWidgets.QAction(self)
+        self.action_wolf.setObjectName("action_wolf")
+        self.action_wolf.triggered.connect(lambda: self.change_wolf_colour())
+
+        self.action_meadow = QtWidgets.QAction(self)
+        self.action_meadow.setObjectName("action_meadow")
+        self.action_meadow.triggered.connect(lambda: self.change_meadow_colour())
+
+        self.menu_colour.addAction(self.action_sheeps)
+        self.menu_colour.addAction(self.action_wolf)
+        self.menu_colour.addAction(self.action_meadow)
+
+        self.setMenuBar(self.menubar)
+
+        self.menu_settings.addAction(self.menu_colour.menuAction())
+        self.menu_settings.addSeparator()
+        self.menu_settings.addAction(self.menu_time.menuAction())
+
+        self.menubar.addAction(self.menu_file.menuAction())
+        self.menubar.addAction(self.menu_settings.menuAction())
+
+        self.retranslateUi()
+        QtCore.QMetaObject.connectSlotsByName(self)
+
+    def retranslateUi(self):
+        _translate = QtCore.QCoreApplication.translate
+        self.setWindowTitle(_translate("MainWindow", "Wolf and sheeps"))
+        self.push_button_step.setText(_translate("MainWindow", "Step"))
+        self.push_button_reset.setText(_translate("MainWindow", "Reset"))
+        self.push_button_start.setText(_translate("MainWindow", "Start"))
+        self.update_label()
+        self.menu_file.setTitle(_translate("MainWindow", "File"))
+        self.action_open.setText(_translate("MainWindow", "Open"))
+        self.action_save.setText(_translate("MainWindow", "Save"))
+        self.action_quit.setText(_translate("MainWindow", "Quit"))
+        self.action_sheeps.setText(_translate("MainWindow", "Sheeps"))
+        self.action_wolf.setText(_translate("MainWindow", "Wolf"))
+        self.action_meadow.setText(_translate("MainWindow", "Meeeadow"))
+        self.menu_colour.setTitle(_translate("MainWindow", "Change colour"))
+        self.menu_settings.setTitle(_translate("MainWindow", "Settings"))
+        self.menu_time.setTitle(_translate("MainWindow", "Time"))
+
+    def update_label(self):
+        self.label_alive_amount.setText("Alive sheeps: " + str(self.pol.simulation.get_alive_amount()))
+
+    def simulate_step(self):
+        self.pol.simulate_round()
+        self.update_label()
+
+    def reset_simulation(self):
+        self.pol.reset_sim()
+        self.update_label()
+
+    def change_sheeps_colour(self):
+        self.pol.set_sheeps_colour()
+
+    def change_wolf_colour(self):
+        self.pol.set_wolf_colour()
+
+    def change_meadow_colour(self):
+        self.pol.set_background_colour()
+
+    def save_to_json_file(self):
+        self.pol.save_file_json()
+
+    def read_from_json_file(self):
+        self.pol.open_file_json()
+
+    def zooming(self):
+        self.pol.set_zoom(self.zoom_slider.value())
+
+    def enable_buttons(self, value):
+        self.push_button_reset.setEnabled(value)
+        self.push_button_step.setEnabled(value)
+        self.menubar.setEnabled(value)
+
+    def change_time(self, action):
+        self.tick_time = 1000 * float(action.text())
+
+    def start_loop(self):
+        self.loop_flag = not self.loop_flag
+        self.enable_buttons(not self.loop_flag)
+        if self.loop_flag:
+            self.push_button_start.setText("Stop")
         else:
-            self.simulation.simulate()
-            self.update()
-            if not self.simulation.get_alive_amount():
-                info_window = InfoWindow("All sheeps have been devoured!", self)
-                info_window.show()
+            self.push_button_start.setText("Start")
 
-    def reset_sim(self):
-        self.simulation = Simulation(sheeps_amount=0, init_pos_limit=self.init_pos_limit)
-        self.update()
-
-    def setSheepsColour(self):
-        self.sheepsColour = QColorDialog.getColor()
-        self.update()
-
-    def setWolfColour(self):
-        self.wolfColour = QColorDialog.getColor()
-        self.update()
-
-    def setBackgroundColour(self):
-        self.backgroundColour = QColorDialog.getColor()
-        self.update()
-
-    def save_file_json(self):
-        file_name = QFileDialog.getSaveFileName(self, 'Save File', '.', "JSON (*.json)")
-        print(file_name)
-        if file_name[0] != '':
-            self.simulation.save_to_json(file_name[0])
-
-    def open_file_json(self):
-        file_name = QFileDialog.getOpenFileName(self, 'Open File', '.', "JSON (*.json)")
-
-        if file_name[0] != '':
-            self.reset_sim()
-            self.simulation.read_from_json(file_name[0])
-            self.update()
-
-    def standardization(self, x, new_min, new_max, old_min, old_max):
-        return (x - old_min) / (old_max - old_min) * (new_max - new_min) + new_min
-
-    def set_zoom(self, zoom):
-        if zoom > 50:
-            self.zoom = self.standardization(zoom, 1, 5, 50, 99)
-        elif zoom < 50:
-            self.zoom = self.standardization(zoom, 0.2, 1, 0, 50)
-        self.scale = (300 * (2 / 3) * self.zoom / self.init_pos_limit)
-        self.update()
-
-
-class InfoWindow(QtWidgets.QMainWindow):
-    def __init__(self, text, parent=None):
-        super(InfoWindow, self).__init__(parent)
-        self.resize(200, 150)
-        self.info_label = QLabel(self)
-        self.info_label.setGeometry(QtCore.QRect(0, 10, 200, 40))
-        self.info_label.setObjectName("info_label")
-        self.info_label.setText(text)
-        self.info_label.setAlignment(Qt.AlignCenter)
-        self.push_button_ok = QtWidgets.QPushButton(self)
-        self.push_button_ok.setGeometry(QtCore.QRect(60, 60, 40, 30))
-        self.push_button_ok.setObjectName("ok_button")
-        self.push_button_ok.setText("OK")
-        self.push_button_ok.clicked.connect(lambda: self.close())
-
-
-if __name__ == "__main__":
-    app = QApplication([])
-    mainWindow = MainWindow()
-    # poletko = Poletko(10)
-    app.exec_()
+        while self.pol.simulation.get_alive_amount() > 0 and self.loop_flag:
+            self.simulate_step()
+            loop = QEventLoop()
+            QTimer.singleShot(self.tick_time, loop.quit)
+            loop.exec_()

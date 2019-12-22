@@ -1,7 +1,6 @@
 import json
 import csv
 import os
-import configparser
 import logging
 from chase.Wolf import Wolf
 from chase.Sheep import Sheep
@@ -123,10 +122,13 @@ class Simulation(object):
         return self.__alives_amount
 
     def set_sheeps(self, sheeps_data):
+        self.__alives_amount = 0
         for sheep_data in sheeps_data:
             sheep = Sheep(self.__sheep_move_dist, sheep_data["x"], sheep_data["y"])
             if not sheep_data["alive"]:
                 sheep.die()
+            else:
+                self.__alives_amount += 1
             self.__sheeps.append(sheep)
 
     def set_wolf(self, wolf_data):
