@@ -14,8 +14,8 @@ class VisualizationWidget(QWidget):
         self.zoom = 1
         self.scale = (300 * (2 / 3) * self.zoom / init_pos_limit)
         self.points = []
-        self.sheepsColour = Qt.red
-        self.wolfColour = Qt.blue
+        self.sheepsColour = Qt.blue
+        self.wolfColour = Qt.red
         self.backgroundColour = Qt.green
         self.setGeometry(QRect(0, 300, 600, 600))
         self.ellipseSize = 12
