@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt, QEventLoop, QTimer
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QLabel, QSlider, QActionGroup, QAction, QDialog, QColorDialog
+from PyQt5.QtWidgets import QLabel, QSlider, QActionGroup, QAction, QDialog, QColorDialog, QDialogButtonBox, QComboBox
 
 from SimulationVisualization import VisualizationWidget
 
@@ -12,7 +12,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__()
         self.setupUi()
         self.loop_flag = False
-        self.tick_time = 500
+        self.tick_time = 1000
         self.show()
 
     def setupUi(self):
@@ -83,44 +83,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menu_file.addSeparator()
         self.menu_file.addAction(self.action_quit)
 
-        """self.menu_colour = QtWidgets.QMenu(self.menu_settings)
-        self.menu_colour.setObjectName("menu_color")"""
-
-        """self.menu_time = QtWidgets.QMenu(self.menu_settings)
-        self.menu_time.setObjectName("menu_time")
-        self.group = QActionGroup(self.menu_time)
-        time_values = ["0.5", "1.0", "1.5", "2.0"]
-        for time_val in time_values:
-            action = QAction(time_val, self.menu_time, checkable=True, checked=time_val == time_values[0])
-            self.menu_time.addAction(action)
-            self.group.addAction(action)
-        self.group.setExclusive(True)
-        self.group.triggered.connect(self.change_time)"""
-
-        self.action_sheeps = QtWidgets.QAction(self)
-        self.action_sheeps.setObjectName("action_sheeps")
-        self.action_sheeps.triggered.connect(lambda: self.change_sheeps_colour())
-
-        self.action_wolf = QtWidgets.QAction(self)
-        self.action_wolf.setObjectName("action_wolf")
-        self.action_wolf.triggered.connect(lambda: self.change_wolf_colour())
-
-        self.action_meadow = QtWidgets.QAction(self)
-        self.action_meadow.setObjectName("action_meadow")
-        self.action_meadow.triggered.connect(lambda: self.change_meadow_colour())
-
-        """self.menu_colour.addAction(self.action_sheeps)
-        self.menu_colour.addAction(self.action_wolf)
-        self.menu_colour.addAction(self.action_meadow)"""
-
         self.setMenuBar(self.menubar)
 
-        """self.menu_settings.addAction(self.menu_colour.menuAction())
-        self.menu_settings.addSeparator()
-        self.menu_settings.addAction(self.menu_time.menuAction())"""
-
         self.menubar.addAction(self.menu_file.menuAction())
-        # self.menubar.addAction(self.menu_settings.menuAction())
         self.menu_settings = QtWidgets.QAction(self)
         self.menu_settings.setObjectName("menu_settings")
         self.menu_settings.triggered.connect(lambda: self.show_dialog_window())
@@ -130,8 +95,18 @@ class MainWindow(QtWidgets.QMainWindow):
         QtCore.QMetaObject.connectSlotsByName(self)
 
     def show_dialog_window(self):
-        self.dialogWindow = SettingsDialog(self)
-        self.dialogWindow.exec()
+        dialog_window = SettingsDialog(self)
+        if dialog_window.exec_():
+            sheep_colour, wolf_colour, meadow_colour, tick_time = dialog_window.get_values()
+            if sheep_colour:
+                self.pol.set_sheeps_colour(sheep_colour)
+            if wolf_colour:
+                self.pol.set_wolf_colour(wolf_colour)
+            if meadow_colour:
+                self.pol.set_background_colour(meadow_colour)
+            if tick_time:
+                self.change_time(tick_time)
+
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
@@ -144,10 +119,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.action_open.setText(_translate("MainWindow", "Open"))
         self.action_save.setText(_translate("MainWindow", "Save"))
         self.action_quit.setText(_translate("MainWindow", "Quit"))
-        self.action_sheeps.setText(_translate("MainWindow", "Sheeps"))
-        self.action_wolf.setText(_translate("MainWindow", "Wolf"))
-        self.action_meadow.setText(_translate("MainWindow", "Meeeadow"))
-        #  self.menu_colour.setTitle(_translate("MainWindow", "Change colour"))
         self.menu_settings.setText(_translate("MainWindow", "Settings"))
 
     #         self.menu_time.setTitle(_translate("MainWindow", "Time"))
@@ -187,7 +158,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menubar.setEnabled(value)
 
     def change_time(self, action):
-        self.tick_time = 1000 * float(action.text())
+        self.tick_time = 1000 * float(action)
 
     def start_loop(self):
         self.loop_flag = not self.loop_flag
@@ -198,11 +169,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.push_button_start.setText("Start")
         while self.pol.simulation.get_alive_amount() >= 0 and self.loop_flag:
             self.simulate_step()
-            if self.pol.simulation.get_alive_amount() == 0:
-                self.push_button_start.setText("Start")
-                self.loop_flag = not self.loop_flag
-                self.enable_buttons(not self.loop_flag)
-                break
             loop = QEventLoop()
             QTimer.singleShot(self.tick_time, loop.quit)
             loop.exec_()
@@ -210,11 +176,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
 class SettingsDialog(QDialog):
     def __init__(self, parent):
-        super(SettingsDialog, self).__init__(parent, QtCore.Qt.WindowStaysOnTopHint)
-        # self.setParent(parent)
+        super(SettingsDialog, self).__init__(parent)
 
-        #self.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
-
+        self.setModal(True)
         self.setWindowTitle("Settings")
         self.setFixedSize(300, 350)
 
@@ -227,7 +191,7 @@ class SettingsDialog(QDialog):
         self.sheep_colour_button.setGeometry(QtCore.QRect(115, 15, 80, 40))
         self.sheep_colour_button.setObjectName("Sheep Colour")
         self.sheep_colour_button.setText("Set")
-        # self.sheep_colour_button.clicked.connect(lambda: parent.())
+        self.sheep_colour_button.clicked.connect(lambda: self.change_sheep_colour())
 
         self.wolf_colour_label = QLabel(self)
         self.wolf_colour_label.setGeometry(QtCore.QRect(15, 80, 100, 40))
@@ -238,7 +202,7 @@ class SettingsDialog(QDialog):
         self.wolf_colour_button.setGeometry(QtCore.QRect(115, 80, 80, 40))
         self.wolf_colour_button.setObjectName("Wolf Colour")
         self.wolf_colour_button.setText("Set")
-        # self.wolf_colour_button.clicked.connect(lambda: parent.())
+        self.wolf_colour_button.clicked.connect(lambda: self.change_wolf_colour())
 
         self.meadow_colour_label = QLabel(self)
         self.meadow_colour_label.setGeometry(QtCore.QRect(15, 145, 100, 40))
@@ -249,11 +213,50 @@ class SettingsDialog(QDialog):
         self.meadow_colour_button.setGeometry(QtCore.QRect(115, 145, 80, 40))
         self.meadow_colour_button.setObjectName("Meadow Colour")
         self.meadow_colour_button.setText("Set")
-        # self.meadow_colour_button.clicked.connect(lambda: parent.())
+        self.meadow_colour_button.clicked.connect(lambda: self.change_meadow_colour())
 
+        self.tick_time_label = QLabel(self)
+        self.tick_time_label.setGeometry(QtCore.QRect(15, 210, 100, 40))
+        self.tick_time_label.setObjectName("tick time label")
+        self.tick_time_label.setText("Tick time")
+
+        self.tick_time_combobox = QComboBox(self)
+        self.tick_time_combobox.addItems(["0.5", "1.0", "1.5", "2.0"])
+        self.tick_time_combobox.setGeometry(QtCore.QRect(115, 210, 80, 40))
+        self.tick_time_combobox.activated[str].connect(self.change_tick_time)
+
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+
+        self.buttonBox = QDialogButtonBox(self)
+        self.buttonBox.setStandardButtons(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        self.buttonBox.setGeometry(QtCore.QRect(180, 280, 100, 60))
+
+        self.sheeps_colour = None
+        self.wolf_colour = None
+        self.meadow_colour = None
+        self.tick_time = None
         self.show()
 
     def change_sheep_colour(self):
         sheeps_colour = QColorDialog.getColor()
         if sheeps_colour.isValid():
-            return sheeps_colour
+            self.sheeps_colour = sheeps_colour
+
+    def change_wolf_colour(self):
+        wolf_colour = QColorDialog.getColor()
+        if wolf_colour.isValid():
+            self.wolf_colour = wolf_colour
+
+    def change_meadow_colour(self):
+        meadow_colour = QColorDialog.getColor()
+        if meadow_colour.isValid():
+            self.meadow_colour = meadow_colour
+
+    def change_tick_time(self, text):
+        self.tick_time = text
+
+    def get_values(self):
+        return self.sheeps_colour, self.wolf_colour, self.meadow_colour, self.tick_time
+

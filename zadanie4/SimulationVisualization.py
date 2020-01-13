@@ -64,6 +64,7 @@ class VisualizationWidget(QWidget):
     def simulate_round(self):
         if not len(self.simulation.get_sheeps()):
             QMessageBox.about(self, "Error", "There is no sheep!")
+            self.logic.start_loop()
             # info_window = InfoWindow("There is no sheep!", self.logic)
             # info_window.show()
         else:
@@ -79,22 +80,16 @@ class VisualizationWidget(QWidget):
         self.simulation = Simulation(sheeps_amount=0, init_pos_limit=self.init_pos_limit)
         self.update()
 
-    def set_sheeps_colour(self):
-        sheeps_colour = QColorDialog.getColor()
-        if sheeps_colour.isValid():
-            self.sheepsColour = sheeps_colour
+    def set_sheeps_colour(self, sheeps_colour):
+        self.sheepsColour = sheeps_colour
         self.update()
 
-    def set_wolf_colour(self):
-        wolf_colour = QColorDialog.getColor()
-        if wolf_colour.isValid():
-            self.wolfColour = wolf_colour
+    def set_wolf_colour(self, wolf_colour):
+        self.wolfColour = wolf_colour
         self.update()
 
-    def set_background_colour(self):
-        background_colour = QColorDialog.getColor()
-        if background_colour.isValid():
-            self.backgroundColour = background_colour
+    def set_background_colour(self, background_colour):
+        self.backgroundColour = background_colour
         self.update()
 
     def save_file_json(self):
